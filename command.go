@@ -22,7 +22,7 @@ func handlerLogin(s *state, cmd command) error {
 		return fmt.Errorf("usage: %s <name>", cmd.Name)
 	}
 	userName := cmd.Arguments[0]
-	_, err := s.db.GetUser(context.Background(), sql.NullString{String: userName, Valid: true})
+	_, err := s.db.GetUser(context.Background(), userName)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		log.Fatalf("user %s does not exist. register it first", userName)
 	}
@@ -42,12 +42,8 @@ func handlerRegister(s *state, cmd command) error {
 		return fmt.Errorf("usage: %s <name>", cmd.Name)
 	}
 	userName := cmd.Arguments[0]
-	sqlUserName := sql.NullString{
-		String: userName,
-		Valid:  true,
-	}
 
-	_, err := s.db.GetUser(context.Background(), sqlUserName)
+	_, err := s.db.GetUser(context.Background(), userName)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Fatalf("db error on GetUser: %v\n", err)
 	}
@@ -57,22 +53,10 @@ func handlerRegister(s *state, cmd command) error {
 
 	dateNow := time.Now()
 	userParams := database.CreateUserParams{
-		ID: uuid.NullUUID{
-			UUID:  uuid.New(),
-			Valid: true,
-		},
-		CreatedAt: sql.NullTime{
-			Time:  dateNow,
-			Valid: true,
-		},
-		UpdatedAt: sql.NullTime{
-			Time:  dateNow,
-			Valid: true,
-		},
-		Name: sql.NullString{
-			String: cmd.Arguments[0],
-			Valid:  true,
-		},
+		ID:        uuid.New(),
+		CreatedAt: dateNow,
+		UpdatedAt: dateNow,
+		Name:      cmd.Arguments[0],
 	}
 	_, err = s.db.CreateUser(context.Background(), userParams)
 	if err != nil {
