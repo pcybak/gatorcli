@@ -71,15 +71,6 @@ func handlerRegister(s *state, cmd command) error {
 	return nil
 }
 
-func handlerReset(s *state, cmd command) error {
-	err := s.db.DeleteAllUser(context.Background())
-	if err != nil {
-		return err
-	}
-	fmt.Printf("deleted all records from table users\n")
-	return nil
-}
-
 func handlerUsers(s *state, cmd command) error {
 	users, err := s.db.GetUsers(context.Background())
 	if err != nil {
