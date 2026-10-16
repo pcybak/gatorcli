@@ -23,7 +23,7 @@ func handlerAddFeed(s *state, cmd command) error {
 	}
 
 	dateNow := time.Now()
-	feedRecord := database.AddFeedParams{
+	addFeedParams := database.AddFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: dateNow,
 		UpdatedAt: dateNow,
@@ -32,7 +32,21 @@ func handlerAddFeed(s *state, cmd command) error {
 		UserID:    user.ID,
 	}
 
-	feed, err := s.db.AddFeed(context.Background(), feedRecord)
+	feed, err := s.db.AddFeed(context.Background(), addFeedParams)
+	if err != nil {
+		return err
+	}
+
+	dateNow = time.Now()
+	feedFollowParams := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: dateNow,
+		UpdatedAt: dateNow,
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	}
+
+	_, err = s.db.CreateFeedFollow(context.Background(), feedFollowParams)
 	if err != nil {
 		return err
 	}

@@ -37,6 +37,9 @@ func main() {
 	c.register("users", handlerUsers)
 	c.register("agg", handlerAgg)
 	c.register("addfeed", handlerAddFeed)
+	c.register("feeds", handlerFeeds)
+	c.register("follow", handlerFollow)
+	c.register("following", handlerFollowing)
 
 	args := os.Args
 	if len(args) < 2 {
