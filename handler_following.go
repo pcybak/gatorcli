@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+
+	"github.com/pcybak/gatorcli/internal/database"
 )
 
-func handlerFollowing(s *state, cmd command) error {
-	username := s.cfg.CurrentUserName
-
-	followedFeeds, err := s.db.GetFeedFollowsForUser(context.Background(), username)
+func handlerFollowing(s *state, cmd command, u database.User) error {
+	followedFeeds, err := s.db.GetFeedFollowsForUser(context.Background(), u.Name)
 	if err != nil {
 		return err
 	}

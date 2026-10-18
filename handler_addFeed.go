@@ -10,17 +10,12 @@ import (
 	"github.com/pcybak/gatorcli/internal/database"
 )
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, u database.User) error {
 	if len(cmd.Arguments) != 2 {
 		return fmt.Errorf("usage: %s <name> <url>", cmd.Name)
 	}
 	feedName := cmd.Arguments[0]
 	feedUrl := cmd.Arguments[1]
-
-	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return err
-	}
 
 	dateNow := time.Now()
 	addFeedParams := database.AddFeedParams{
@@ -29,7 +24,7 @@ func handlerAddFeed(s *state, cmd command) error {
 		UpdatedAt: dateNow,
 		Name:      feedName,
 		Url:       feedUrl,
-		UserID:    user.ID,
+		UserID:    u.ID,
 	}
 
 	feed, err := s.db.AddFeed(context.Background(), addFeedParams)
@@ -42,7 +37,7 @@ func handlerAddFeed(s *state, cmd command) error {
 		ID:        uuid.New(),
 		CreatedAt: dateNow,
 		UpdatedAt: dateNow,
-		UserID:    user.ID,
+		UserID:    u.ID,
 		FeedID:    feed.ID,
 	}
 

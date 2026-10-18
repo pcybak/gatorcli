@@ -9,14 +9,9 @@ import (
 	"github.com/pcybak/gatorcli/internal/database"
 )
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, u database.User) error {
 	if len(cmd.Arguments) != 1 {
 		return fmt.Errorf("usage: %s <url>", cmd.Name)
-	}
-	username := s.cfg.CurrentUserName
-	user, err := s.db.GetUser(context.Background(), username)
-	if err != nil {
-		return err
 	}
 	feedUrl := cmd.Arguments[0]
 	feed, err := s.db.GetFeedByURL(context.Background(), feedUrl)
@@ -29,7 +24,7 @@ func handlerFollow(s *state, cmd command) error {
 		ID:        uuid.New(),
 		CreatedAt: dateNow,
 		UpdatedAt: dateNow,
-		UserID:    user.ID,
+		UserID:    u.ID,
 		FeedID:    feed.ID,
 	}
 
