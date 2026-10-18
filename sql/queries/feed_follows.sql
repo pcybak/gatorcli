@@ -22,3 +22,12 @@ FROM feed_follows ff
 JOIN feeds f on ff.feed_id = f.id
 JOIN users u on ff.user_id = u.id
 WHERE u.name = $1;
+
+-- name: DeleteFeedFollow :one
+DELETE
+FROM feed_follows ff
+USING feeds f
+WHERE ff.feed_id = f.id
+AND ff.user_id = $1
+AND f.url = $2
+RETURNING ff.*;
