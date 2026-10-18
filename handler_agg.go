@@ -2,19 +2,33 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"time"
 )
 
 func handlerAgg(s *state, cmd command) error {
-	rssFeedURL := "https://www.wagslane.dev/index.xml"
-	feed, err := fetchFeed(context.Background(), rssFeedURL)
-	if err != nil {
-		return fmt.Errorf("error while fetching RSS feed from %s: %v", rssFeedURL, err)
+	if len(cmd.Arguments) != 1 {
+		return fmt.Errorf("usage: %s <duration>", cmd.Name)
 	}
 
-	prettyjson, _ := json.MarshalIndent(*feed, "", "  ")
-	fmt.Println(string(prettyjson))
+	refreshDurationString := cmd.Arguments[0]
+	refreshDuration, err := time.ParseDuration(refreshDurationString)
+	if err != nil {
+		return err
+	}
 
-	return nil
+	ticker := time.NewTicker(refreshDuration)
+	defer ticker.Stop()
+
+	fmt.Printf("Collecting feeds every %s\n", refreshDuration.String())
+
+	scrapeFeeds(s)
+	for {
+		select {
+		case <-ticker.C:
+			scrapeFeeds(s)
+		case <-context.Background().Done():
+			return nil
+		}
+	}
 }

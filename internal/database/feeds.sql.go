@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,7 +23,7 @@ VALUES (
     $5,
     $6
 )
-RETURNING id, created_at, updated_at, name, url, user_id
+RETURNING id, created_at, updated_at, name, url, user_id, last_fetched_at
 `
 
 type AddFeedParams struct {
@@ -51,6 +52,7 @@ func (q *Queries) AddFeed(ctx context.Context, arg AddFeedParams) (Feed, error) 
 		&i.Name,
 		&i.Url,
 		&i.UserID,
+		&i.LastFetchedAt,
 	)
 	return i, err
 }
@@ -96,9 +98,18 @@ FROM feeds
 WHERE url = $1
 `
 
-func (q *Queries) GetFeedByURL(ctx context.Context, url string) (Feed, error) {
+type GetFeedByURLRow struct {
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Name      string
+	Url       string
+	UserID    uuid.UUID
+}
+
+func (q *Queries) GetFeedByURL(ctx context.Context, url string) (GetFeedByURLRow, error) {
 	row := q.db.QueryRowContext(ctx, getFeedByURL, url)
-	var i Feed
+	var i GetFeedByURLRow
 	err := row.Scan(
 		&i.ID,
 		&i.CreatedAt,
@@ -108,4 +119,40 @@ func (q *Queries) GetFeedByURL(ctx context.Context, url string) (Feed, error) {
 		&i.UserID,
 	)
 	return i, err
+}
+
+const getNextFeedToFetch = `-- name: GetNextFeedToFetch :one
+SELECT f.id, f.url
+FROM feeds f
+ORDER BY f.last_fetched_at ASC NULLS FIRST
+LIMIT 1
+`
+
+type GetNextFeedToFetchRow struct {
+	ID  uuid.UUID
+	Url string
+}
+
+func (q *Queries) GetNextFeedToFetch(ctx context.Context) (GetNextFeedToFetchRow, error) {
+	row := q.db.QueryRowContext(ctx, getNextFeedToFetch)
+	var i GetNextFeedToFetchRow
+	err := row.Scan(&i.ID, &i.Url)
+	return i, err
+}
+
+const markFeedFetched = `-- name: MarkFeedFetched :exec
+UPDATE feeds
+SET last_fetched_at = $2,
+updated_at = $2
+WHERE id = $1
+`
+
+type MarkFeedFetchedParams struct {
+	ID            uuid.UUID
+	LastFetchedAt sql.NullTime
+}
+
+func (q *Queries) MarkFeedFetched(ctx context.Context, arg MarkFeedFetchedParams) error {
+	_, err := q.db.ExecContext(ctx, markFeedFetched, arg.ID, arg.LastFetchedAt)
+	return err
 }

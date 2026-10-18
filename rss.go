@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/xml"
+	"fmt"
 	"html"
 	"io"
 	"net/http"
@@ -36,6 +37,7 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 		Timeout: time.Second * 10,
 	}
 
+	fmt.Printf("fetching feed from %s\n", feedURL)
 	res, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
