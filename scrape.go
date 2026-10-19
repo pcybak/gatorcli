@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pcybak/gatorcli/internal/database"
 )
 
@@ -30,9 +31,30 @@ func scrapeFeeds(s *state) error {
 		return err
 	}
 
-	fmt.Println("Fetched topics:")
 	for _, feed := range rssFeed.Channel.Item {
-		fmt.Println(feed.Title)
+		dateNow := time.Now()
+
+		pubDate, err := time.Parse(time.RFC822, feed.PubDate)
+		if err != nil {
+			pubDate, err = time.Parse(time.RFC1123Z, feed.PubDate)
+		}
+		publishedAt := sql.NullTime{
+			Time:  pubDate,
+			Valid: err == nil,
+		}
+		_, err = s.db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   dateNow,
+			UpdatedAt:   dateNow,
+			Title:       feed.Title,
+			Url:         feed.Link,
+			Description: feed.Description,
+			PublishedAt: publishedAt,
+			FeedID:      nextFeedToFetch.ID,
+		})
+		if err != nil {
+			fmt.Printf("error during scraping feed %s: %v", nextFeedToFetch.Url, err)
+		}
 	}
 
 	return nil
